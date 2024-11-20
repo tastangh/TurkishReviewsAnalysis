@@ -7,7 +7,7 @@ from embedding_generator import EmbeddingGenerator
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import GridSearchCV, ParameterGrid
 
 
 class Trainer:
@@ -29,37 +29,61 @@ class Trainer:
         """
         Random Forest modelini eğitir.
         """
-        with tqdm(total=len(param_grid['n_estimators']), desc=f"Random Forest Eğitimi ({embedding_name})") as pbar:
-            rf = RandomForestClassifier(random_state=self.random_state)
-            grid = GridSearchCV(rf, param_grid, cv=3, scoring='accuracy')
+        print("\n[INFO] Random Forest GridSearchCV başlatılıyor...")
+        rf = RandomForestClassifier(random_state=self.random_state)
+        grid = GridSearchCV(rf, param_grid, cv=3, scoring='accuracy', verbose=0)  # Verbose kapalı
+        print(f"[INFO] Random Forest için parametre grid'i: {param_grid}")
+
+        try:
+            for params in tqdm(ParameterGrid(param_grid), desc="Random Forest Parametreleri"):
+                print(f"Denenen parametreler: {params}")
+            
             grid.fit(self.X_train, self.y_train)
             self.models['Random Forest'] = grid.best_estimator_
-            pbar.update(len(param_grid['n_estimators']))
-        print(f"En iyi parametreler (RF): {grid.best_params_}")
+            print(f"[SUCCESS] En iyi parametreler (RF): {grid.best_params_}")
+            print(f"[INFO] En iyi skor (RF): {grid.best_score_}")
+        except Exception as e:
+            print(f"[ERROR] Random Forest eğitiminde hata: {e}")
 
     def train_svm(self, param_grid, embedding_name):
         """
         SVM modelini eğitir.
         """
-        with tqdm(total=len(param_grid['C']), desc=f"SVM Eğitimi ({embedding_name})") as pbar:
-            svm = SVC(random_state=self.random_state)
-            grid = GridSearchCV(svm, param_grid, cv=3, scoring='accuracy')
+        print("\n[INFO] SVM GridSearchCV başlatılıyor...")
+        svm = SVC(random_state=self.random_state)
+        grid = GridSearchCV(svm, param_grid, cv=3, scoring='accuracy', verbose=0)
+        print(f"[INFO] SVM için parametre grid'i: {param_grid}")
+
+        try:
+            for params in tqdm(ParameterGrid(param_grid), desc="SVM Parametreleri"):
+                print(f"Denenen parametreler: {params}")
+            
             grid.fit(self.X_train, self.y_train)
             self.models['SVM'] = grid.best_estimator_
-            pbar.update(len(param_grid['C']))
-        print(f"En iyi parametreler (SVM): {grid.best_params_}")
+            print(f"[SUCCESS] En iyi parametreler (SVM): {grid.best_params_}")
+            print(f"[INFO] En iyi skor (SVM): {grid.best_score_}")
+        except Exception as e:
+            print(f"[ERROR] SVM eğitiminde hata: {e}")
 
     def train_logreg(self, param_grid, embedding_name):
         """
         Logistic Regression modelini eğitir.
         """
-        with tqdm(total=len(param_grid['C']), desc=f"Logistic Regression Eğitimi ({embedding_name})") as pbar:
-            logreg = LogisticRegression(max_iter=1000, random_state=self.random_state)
-            grid = GridSearchCV(logreg, param_grid, cv=3, scoring='accuracy')
+        print("\n[INFO] Logistic Regression GridSearchCV başlatılıyor...")
+        logreg = LogisticRegression(max_iter=1000, random_state=self.random_state)
+        grid = GridSearchCV(logreg, param_grid, cv=3, scoring='accuracy', verbose=0)
+        print(f"[INFO] Logistic Regression için parametre grid'i: {param_grid}")
+
+        try:
+            for params in tqdm(ParameterGrid(param_grid), desc="Logistic Regression Parametreleri"):
+                print(f"Denenen parametreler: {params}")
+            
             grid.fit(self.X_train, self.y_train)
             self.models['Logistic Regression'] = grid.best_estimator_
-            pbar.update(len(param_grid['C']))
-        print(f"En iyi parametreler (LogReg): {grid.best_params_}")
+            print(f"[SUCCESS] En iyi parametreler (LogReg): {grid.best_params_}")
+            print(f"[INFO] En iyi skor (LogReg): {grid.best_score_}")
+        except Exception as e:
+            print(f"[ERROR] Logistic Regression eğitiminde hata: {e}")
 
     def save_models(self, save_path, embedding_name):
         """
@@ -68,13 +92,13 @@ class Trainer:
         for model_name, model in self.models.items():
             model_file = f"{save_path}/{embedding_name}_{model_name.replace(' ', '_').lower()}.pkl"
             joblib.dump(model, model_file)
-            print(f"Model kaydedildi: {model_file}")
+            print(f"[SUCCESS] Model kaydedildi: {model_file}")
 
 
 if __name__ == "__main__":
     # GPU veya CPU cihazını seç
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"Kullanılacak cihaz: {device}")
+    print(f"[INFO] Kullanılacak cihaz: {device}")
 
     # Veri seti adı
     dataset_name = "maydogan/TRSAv1"
@@ -90,11 +114,11 @@ if __name__ == "__main__":
     ]
 
     # Veri işlemleri
-    print("Veri seti işleniyor...")
+    print("[INFO] Veri seti işleniyor...")
     processor = DataProcessor(dataset_name, text_column='review', label_column='score')
     subset = processor.get_random_subset(subset_size=5000)
     X_train, X_test, y_train, y_test = processor.split_data(subset)
-    print("Veri işlemleri tamamlandı.")
+    print("[INFO] Veri işlemleri tamamlandı.")
 
     # Hiperparametre grid'leri
     svm_params = {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf'], 'gamma': [0.01, 0.1, 1]}
@@ -107,11 +131,11 @@ if __name__ == "__main__":
 
     # Embedding modeli döngüsü
     for model_name in tqdm(model_names, desc="Embedding Modelleri"):
-        print(f"\nEmbedding modeli: {model_name}")
+        print(f"\n[INFO] Embedding modeli: {model_name}")
         embedder = EmbeddingGenerator(model_name, trust_remote_code=True, device=device)
 
         # Eğitim seti embedding'lerini oluştur
-        print(f"Embedding oluşturuluyor: {model_name}")
+        print(f"[INFO] Embedding oluşturuluyor: {model_name}")
         X_train_embedded = embedder.encode(X_train.tolist(), pooling="mean")
 
         # Trainer
@@ -123,10 +147,10 @@ if __name__ == "__main__":
                        ("Logistic Regression", trainer.train_logreg, logreg_params)]
 
         for clf_name, train_method, params in tqdm(classifiers, desc=f"Modeller ({model_name})"):
-            print(f"{clf_name} eğitiliyor...")
+            print(f"\n[INFO] {clf_name} eğitiliyor...")
             train_method(params, embedding_name=model_name)
 
         # Eğitilen modelleri kaydet
         trainer.save_models(save_path=save_path, embedding_name=model_name)
 
-    print("\nTüm modeller kaydedildi!")
+    print("\n[INFO] Tüm modeller kaydedildi!")
