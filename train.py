@@ -150,17 +150,6 @@ class Trainer:
         plt.ylabel("Accuracy")
         plt.ylim(0, 1)  # Y eksenini 0-1 arasında ayarla
 
-        # Çubukların üzerine yüzdelik skor ekle
-        for bar, score in zip(bars.patches, list(self.results.values())):
-            plt.text(
-                bar.get_x() + bar.get_width() / 2,
-                bar.get_height() + 0.02,
-                f"{score * 100:.2f}%",
-                ha="center",
-                va="bottom",
-                fontsize=10
-            )
-
         plt.tight_layout()
 
         # Kaydet ve göster
@@ -219,11 +208,6 @@ if __name__ == "__main__":
         X_train_embedded = embedder.encode(X_train.tolist(), pooling="mean")
         X_test_embedded = embedder.encode(X_test.tolist(), pooling="mean")
 
-        # Embedding görselleştirme
-        print("[INFO] Embedding görselleştirme başlatılıyor...")
-        embedder.visualize_embeddings(X_train_embedded, y_train, method="pca")  # PCA ile görselleştir
-        embedder.visualize_embeddings(X_train_embedded, y_train, method="tsne")  # t-SNE ile görselleştir
-
         # Trainer
         trainer = Trainer(X_train_embedded, y_train, device=device)
 
@@ -243,3 +227,8 @@ if __name__ == "__main__":
         trainer.visualize_results(embedding_name=model_name)
 
     print("\n[INFO] Tüm modeller kaydedildi!")
+
+
+# TODO : kaç negatif kaç pozitif kaç neuttral olduğu görselleştirilmeli (görselleştirilen yerde aralardaki sayı az ise ince işcilik yapılmalı gerekirse kesikli çizgi ile grafiğin  tam nerede olduğu aralarındaki fark güzelce göstrelimeli)
+# TODO : temsiller tsne şeklinde görselleştirilmeli ayrı labellların birbirine yakınlığını uzaklığını görebilmeliyiz.
+# TODO : train görselleştirmelerinin yanında vb bir yerinde  grafikten ziyade sayısal değerler de net şekilde belli edilmeli  

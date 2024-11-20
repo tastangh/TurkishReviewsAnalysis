@@ -36,17 +36,3 @@ class EmbeddingGenerator:
             except Exception as e:
                 print(f"Hata: '{text}' metni işlenirken sorun oluştu -> {e}")
         return np.vstack(embeddings)
-
-    def visualize_embeddings(self, embeddings, labels, method="pca"):
-        if method == "pca":
-            reducer = PCA(n_components=2)
-        elif method == "tsne":
-            reducer = TSNE(n_components=2)
-        else:
-            raise ValueError("Yalnızca 'pca' veya 'tsne' destekleniyor.")
-
-        reduced = reducer.fit_transform(embeddings)
-        plt.scatter(reduced[:, 0], reduced[:, 1], c=labels, cmap='viridis', s=5)
-        plt.title(f"{method.upper()} ile Görselleştirme")
-        plt.colorbar()
-        plt.show()

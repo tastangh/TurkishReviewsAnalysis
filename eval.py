@@ -156,3 +156,5 @@ if __name__ == "__main__":
         print(f"\n[SUMMARY] Model: {model_name}")
         print(f"Accuracy: {metrics['accuracy']}")
         print(f"Classification Report:\n{metrics['classification_report']}")
+
+# TODO : üretilen png'ler model bazlı kaydedilmeli
