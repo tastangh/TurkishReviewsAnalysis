@@ -57,7 +57,7 @@ class Trainer:
             plt.text(
                 x + 0.01,  # Slightly to the right of the bar edge
                 y,         # Centered vertically
-                f"{x:.2f}",  # Format score to 2 decimal places
+                f"%{x * 100:.3f}",  # Format score as percentage
                 ha='left', va='center', fontsize=10, color='black'
             )
 
