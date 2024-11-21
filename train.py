@@ -44,15 +44,27 @@ class Trainer:
         sorted_params = [params[i] for i in sorted_indices]
 
         plt.figure(figsize=(12, 6))
-        sns.barplot(x=sorted_scores, y=[str(p) for p in sorted_params], palette="viridis")
+        barplot = sns.barplot(x=sorted_scores, y=[str(p) for p in sorted_params], palette="viridis")
         plt.title(f"{model_name} (Embedding: {embedding_name}) - Grid Search Results")
         plt.xlabel("Mean Test Accuracy")
         plt.ylabel("Hyperparameters")
         plt.xlim(0, 1)  # x ekseni 0 ile 1 arasında olmalı
+
+        # Add text annotations on top of the bars
+        for i, bar in enumerate(barplot.patches):
+            x = bar.get_width()  # The length of the bar (accuracy value)
+            y = bar.get_y() + bar.get_height() / 2  # Centered vertically
+            plt.text(
+                x + 0.01,  # Slightly to the right of the bar edge
+                y,         # Centered vertically
+                f"{x:.2f}",  # Format score to 2 decimal places
+                ha='left', va='center', fontsize=10, color='black'
+            )
+
         plt.tight_layout()
 
-        # Kaydet ve göster
-        sanitized_embedding_name = embedding_name.replace("/", "_")  # Dosya adındaki yasaklı karakterleri değiştir
+        # Save and show
+        sanitized_embedding_name = embedding_name.replace("/", "_")  # Replace forbidden characters in filenames
         sanitized_model_name = model_name.lower().replace(" ", "_")
         plot_dir = f"plots/{sanitized_embedding_name}"
         self._ensure_dir_exists(plot_dir)
@@ -61,6 +73,7 @@ class Trainer:
         plt.savefig(plot_path)
         print(f"[SUCCESS] Grid Search görselleştirildi ve kaydedildi: {plot_path}")
         plt.show()
+
 
     def train_rf(self, param_grid, embedding_name):
         """
@@ -138,56 +151,85 @@ class Trainer:
             print(f"[SUCCESS] Model kaydedildi: {model_file}")
 
     def visualize_results(self, embedding_name):
-        """Eğitim sonuçlarını görselleştirir."""
-        if not self.results:
-            print("[INFO] Görselleştirilecek sonuç bulunamadı.")
-            return
+            """Eğitim sonuçlarını görselleştirir."""
+            if not self.results:
+                print("[INFO] Görselleştirilecek sonuç bulunamadı.")
+                return
 
-        plt.figure(figsize=(10, 6))
-        bars = sns.barplot(x=list(self.results.keys()), y=list(self.results.values()), palette="viridis")
-        plt.title(f"{embedding_name} - Model Karşılaştırması")
-        plt.xlabel("Model")
-        plt.ylabel("Accuracy")
-        plt.ylim(0, 1)  # Y eksenini 0-1 arasında ayarla
+            plt.figure(figsize=(10, 6))
+            bars = sns.barplot(x=list(self.results.keys()), y=list(self.results.values()), palette="viridis")
+            plt.title(f"{embedding_name} - Model Karşılaştırması")
+            plt.xlabel("Model")
+            plt.ylabel("Accuracy")
+            plt.ylim(0, 1)  # Y eksenini 0-1 arasında ayarla
 
-        plt.tight_layout()
+            # Add accuracy values on top of each bar
+            for i, bar in enumerate(bars.patches):
+                x = bar.get_x() + bar.get_width() / 2  # Center of the bar
+                y = bar.get_height()  # Height of the bar (accuracy value)
+                plt.text(x, y + 0.02, f"{y:.2f}", ha='center', va='bottom', fontsize=10)
 
-        # Kaydet ve göster
-        sanitized_embedding_name = embedding_name.replace("/", "_")
-        plot_dir = f"plots/{sanitized_embedding_name}"
-        self._ensure_dir_exists(plot_dir)
+            plt.tight_layout()
 
-        plot_path = f"{plot_dir}/accuracy_comparison.png"
-        plt.savefig(plot_path)
-        print(f"[SUCCESS] Accuracy Comparison görselleştirildi ve kaydedildi: {plot_path}")
-        plt.show()
+            # Kaydet ve göster
+            sanitized_embedding_name = embedding_name.replace("/", "_")
+            plot_dir = f"plots/{sanitized_embedding_name}"
+            self._ensure_dir_exists(plot_dir)
+
+            plot_path = f"{plot_dir}/accuracy_comparison.png"
+            plt.savefig(plot_path)
+            print(f"[SUCCESS] Accuracy Comparison görselleştirildi ve kaydedildi: {plot_path}")
+            plt.show()
 
 if __name__ == "__main__":
-    # GPU veya CPU cihazını seç
+    # Select device
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"[INFO] Kullanılacak cihaz: {device}")
+    print(f"[INFO] Using device: {device}")
 
-    # Veri seti adı
+    # Dataset name
     dataset_name = "maydogan/TRSAv1"
 
-    # Embedding modelleri
-    model_names = [
-        "dbmdz/bert-base-turkish-cased",
-        "sentence-transformers/all-MiniLM-L12-v2",
-    ]
-
-    # Veri işlemleri
-    print("[INFO] Veri seti işleniyor...")
+    # Data processing
+    print("[INFO] Processing dataset...")
     processor = DataProcessor(dataset_name, text_column='review', label_column='score')
 
-    # Rastgele alt küme seçimi
-    print("[INFO] Rastgele alt küme seçiliyor...")
+    # Random subset selection
+    print("[INFO] Selecting random subset...")
     subset = processor.get_random_subset(subset_size=5000)
-    print("[INFO] Alt kümenin sınıf dağılımı:")
+    print("[INFO] Subset class distribution:")
     print(subset['score'].value_counts())
-    # Veri bölme
+
+    # Plot subset label distribution
+    print("[INFO] Visualizing subset label distribution...")
+    processor.plot_label_distribution(subset, label_column='score', title="Ayırılan 5000 Data'nın Sınıf Dağılımı")
+
+    # Data splitting
+    print("[INFO] Splitting data into train and test sets...")
     X_train, X_test, y_train, y_test = processor.split_data(subset)
 
+    # Convert train/test splits into DataFrames for visualization
+    train_data = X_train.to_frame()
+    train_data['score'] = y_train
+    test_data = X_test.to_frame()
+    test_data['score'] = y_test
+
+    # Plot train label distribution
+    print("[INFO] Visualizing train set label distribution...")
+    processor.plot_label_distribution(train_data, label_column='score', title="Train Data Sınıf Dağılımı")
+
+    # Plot test label distribution
+    print("[INFO] Visualizing test set label distribution...")
+    processor.plot_label_distribution(test_data, label_column='score', title="Test Set Sınıf Dağılımı")
+   
+   # Embedding modelleri
+    model_names = [
+        # "jinaai/jina-embeddings-v3",
+        # "sentence-transformers/all-MiniLM-L12-v2",
+        # "intfloat/multilingual-e5-large-instruct",
+        # "BAAI/bge-m3",
+        # "nomic-ai/nomic-embed-text-v1",
+        "dbmdz/bert-base-turkish-cased",
+    ]
 
     # Hiperparametre grid'leri
     svm_params = {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf'], 'gamma': [0.01, 0.1, 1]}
@@ -207,7 +249,11 @@ if __name__ == "__main__":
         print(f"[INFO] Embedding oluşturuluyor: {model_name}")
         X_train_embedded = embedder.encode(X_train.tolist(), pooling="mean")
         X_test_embedded = embedder.encode(X_test.tolist(), pooling="mean")
-
+        
+         # t-SNE Visualization
+        print(f"[INFO] t-SNE görselleştirme başlatılıyor: {model_name}")
+        embedder.visualize_tsne(X_train_embedded, y_train, title=f"t-SNE {model_name} (Train Set)")
+        embedder.visualize_tsne(X_test_embedded,y_test,title=f"t-SNE {model_name} (Test Set)")
         # Trainer
         trainer = Trainer(X_train_embedded, y_train, device=device)
 
@@ -228,7 +274,3 @@ if __name__ == "__main__":
 
     print("\n[INFO] Tüm modeller kaydedildi!")
 
-
-# TODO : kaç negatif kaç pozitif kaç neuttral olduğu görselleştirilmeli (görselleştirilen yerde aralardaki sayı az ise ince işcilik yapılmalı gerekirse kesikli çizgi ile grafiğin  tam nerede olduğu aralarındaki fark güzelce göstrelimeli)
-# TODO : temsiller tsne şeklinde görselleştirilmeli ayrı labellların birbirine yakınlığını uzaklığını görebilmeliyiz.
-# TODO : train görselleştirmelerinin yanında vb bir yerinde  grafikten ziyade sayısal değerler de net şekilde belli edilmeli  
