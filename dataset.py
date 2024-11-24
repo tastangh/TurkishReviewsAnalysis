@@ -15,8 +15,18 @@ class DataProcessor:
         self.data = self.load_dataset()
 
     def load_dataset(self):
-        dataset = load_dataset(self.dataset_name)
+        try:
+            print(f"[INFO] Attempting to load dataset: {self.dataset_name}")
+            # Try loading the dataset from Hugging Face
+            dataset = load_dataset(self.dataset_name)
+        except ValueError as e:
+            print(f"[ERROR] Failed to load dataset from Hugging Face: {e}")
+            raise ValueError(f"Dataset '{self.dataset_name}' could not be loaded.")
+        except Exception as e:
+            print(f"[ERROR] Unexpected error: {e}")
+            raise
         return dataset['train'].to_pandas()
+
 
     def get_random_subset(self, subset_size=5000):
         subset = self.data.sample(n=subset_size, random_state=self.random_state)
