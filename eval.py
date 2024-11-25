@@ -56,7 +56,7 @@ class Eval:
         os.makedirs("plots", exist_ok=True)
         plt.savefig(plot_path)
         print(f"[SUCCESS] Confusion Matrix kaydedildi: {plot_path}")
-        plt.show()
+        # plt.show()
 
     def evaluate_models(self):
         """
@@ -112,7 +112,7 @@ class Eval:
         os.makedirs("plots", exist_ok=True)
         plt.savefig(plot_path)
         print(f"[SUCCESS] Accuracy Comparison grafiği kaydedildi: {plot_path}")
-        plt.show()
+        # plt.show()
 
 
 if __name__ == "__main__":
@@ -128,7 +128,7 @@ if __name__ == "__main__":
     dataset_name = "maydogan/TRSAv1"
 
     # Embedding modeli
-    model_name = "dbmdz/bert-base-turkish-cased"
+    model_name = "dbmdz_bert-base-turkish-cased"
 
     # Veri işlemleri
     print("[INFO] Veri seti işleniyor...")

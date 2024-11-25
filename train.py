@@ -73,7 +73,7 @@ class Trainer:
         plot_path = f"{plot_dir}/{sanitized_model_name}_grid_search.png"
         plt.savefig(plot_path)
         print(f"[SUCCESS] Grid Search görselleştirildi ve kaydedildi: {plot_path}")
-        plt.show()
+        # plt.show()
 
 
     def train_rf(self, param_grid, embedding_name):
@@ -180,7 +180,7 @@ class Trainer:
             plot_path = f"{plot_dir}/accuracy_comparison.png"
             plt.savefig(plot_path)
             print(f"[SUCCESS] Accuracy Comparison görselleştirildi ve kaydedildi: {plot_path}")
-            plt.show()
+            # plt.show()
 
 # Define a function to handle embedding and training for a specific model
 def process_embedding_model(model_name, X_train, y_train, X_test, y_test, save_path, device):
@@ -189,8 +189,12 @@ def process_embedding_model(model_name, X_train, y_train, X_test, y_test, save_p
 
     # Create embeddings
     print(f"[INFO] Generating embeddings for model: {model_name}")
-    X_train_embedded = embedder.encode(X_train.tolist(), pooling="mean")
-    X_test_embedded = embedder.encode(X_test.tolist(), pooling="mean")
+    X_train_embedded = embedder.get_representation(
+        model_data=(embedder.tokenizer, embedder.model), texts=X_train.tolist()
+    )
+    X_test_embedded = embedder.get_representation(
+        model_data=(embedder.tokenizer, embedder.model), texts=X_test.tolist()
+    )
 
     # t-SNE Visualization
     print(f"[INFO] Generating t-SNE visualization for: {model_name}")
@@ -241,11 +245,11 @@ if __name__ == "__main__":
 
     # Model names and save path
     model_names = [
-        "jinaai/jina-embeddings-v3",
-        "sentence-transformers/all-MiniLM-L12-v2",
-        "intfloat/multilingual-e5-large-instruct",
-        "BAAI/bge-m3",
-        "nomic-ai/nomic-embed-text-v1",
+        # "jinaai/jina-embeddings-v3",
+        # "sentence-transformers/all-MiniLM-L12-v2",
+        # "intfloat/multilingual-e5-large-instruct",
+        # "BAAI/bge-m3",
+        # "nomic-ai/nomic-embed-text-v1",
         "dbmdz/bert-base-turkish-cased",
     ]
     save_path = "models"

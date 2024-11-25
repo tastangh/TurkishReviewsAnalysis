@@ -11,33 +11,21 @@ import seaborn as sns
 class EmbeddingGenerator:
     def __init__(self, model_name, trust_remote_code=False, device=None):
         self.model_name = model_name
-        self.device = device if device else torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.device = device
         self.tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=trust_remote_code)
         self.model = AutoModel.from_pretrained(model_name, trust_remote_code=trust_remote_code).to(self.device)
 
-    def encode(self, texts, pooling="mean"):
-        embeddings = []
-        for text in tqdm(texts, desc="Embedding İşlemi"):
-            try:
-                inputs = self.tokenizer(
-                    text, return_tensors="pt", padding=True, truncation=True, max_length=512
-                ).to(self.device)
-                with torch.no_grad():
-                    outputs = self.model(**inputs)
+    def get_representation(self, model_data, texts):
+        tokenizer, model = model_data
+        representations = []
+        for text in tqdm(texts, desc="Tokenizing texts", leave=False):
+            inputs = tokenizer(text, return_tensors="pt", padding=True, truncation=True).to(self.device)
+            with torch.no_grad():
+                outputs = model(**inputs)
+                last_hidden_state = outputs.last_hidden_state.mean(dim=1).float()
+            representations.append(last_hidden_state.cpu().numpy())
+        return np.vstack(representations)
 
-                if pooling == "mean":
-                    embedding = outputs.last_hidden_state.mean(dim=1)
-                elif pooling == "max":
-                    embedding, _ = outputs.last_hidden_state.max(dim=1)
-                elif pooling == "cls":
-                    embedding = outputs.last_hidden_state[:, 0, :]
-                else:
-                    raise ValueError("Havuzlama yöntemi 'mean', 'max' veya 'cls' olmalı.")
-
-                embeddings.append(embedding.cpu().float().numpy())
-            except Exception as e:
-                print(f"Hata: '{text}' metni işlenirken sorun oluştu -> {e}")
-        return np.vstack(embeddings)
 
     def visualize_tsne(self, embeddings, labels, title="t-SNE Visualization", save_dir="plots"):
         """
