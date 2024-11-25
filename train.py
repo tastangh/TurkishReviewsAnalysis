@@ -11,6 +11,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, ParameterGrid
 import torch_directml 
 import multiprocessing
+import torch
 
 
 class Trainer:
@@ -182,13 +183,19 @@ class Trainer:
             print(f"[SUCCESS] Accuracy Comparison görselleştirildi ve kaydedildi: {plot_path}")
             # plt.show()
 
-# Define a function to handle embedding and training for a specific model
-def process_embedding_model(model_name, X_train, y_train, X_test, y_test, save_path, device):
-    print(f"\n[INFO] Processing embedding model: {model_name}")
-    embedder = EmbeddingGenerator(model_name, trust_remote_code=True, device=device)
 
-    # Create embeddings
-    print(f"[INFO] Generating embeddings for model: {model_name}")
+def train_with_gridsearch(args):
+    """
+    Belirli bir model için embedding oluşturur, GridSearch ile eğitim yapar ve sonuçları kaydeder.
+    """
+    model_name, X_train, y_train, X_test, y_test, save_path, gpu_device = args
+    print(f"[INFO] Başlatılıyor: {model_name} (GPU: {gpu_device})")
+    
+    # GPU cihazı ayarla
+    embedder = EmbeddingGenerator(model_name, trust_remote_code=True, device=gpu_device)
+
+    # Embedding oluştur
+    print(f"[INFO] Embedding oluşturuluyor: {model_name}")
     X_train_embedded = embedder.get_representation(
         model_data=(embedder.tokenizer, embedder.model), texts=X_train.tolist()
     )
@@ -196,13 +203,14 @@ def process_embedding_model(model_name, X_train, y_train, X_test, y_test, save_p
         model_data=(embedder.tokenizer, embedder.model), texts=X_test.tolist()
     )
 
-    # t-SNE Visualization
-    print(f"[INFO] Generating t-SNE visualization for: {model_name}")
+    # t-SNE Görselleştirme
+    print(f"[INFO] t-SNE görselleştirmesi: {model_name}")
     embedder.visualize_tsne(X_train_embedded, y_train, title=f"t-SNE {model_name} (Train Set)")
     embedder.visualize_tsne(X_test_embedded, y_test, title=f"t-SNE {model_name} (Test Set)")
 
-    # Train models
-    trainer = Trainer(X_train_embedded, y_train, device=device)
+    # Eğitim
+    trainer = Trainer(X_train_embedded, y_train, device=gpu_device)
+
     classifiers = [
         ("Random Forest", trainer.train_rf, {'n_estimators': [50, 100, 200], 'max_depth': [None, 10, 20], 'min_samples_split': [2, 5, 10]}),
         ("SVM", trainer.train_svm, {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf'], 'gamma': [0.01, 0.1, 1]}),
@@ -210,63 +218,61 @@ def process_embedding_model(model_name, X_train, y_train, X_test, y_test, save_p
     ]
 
     for clf_name, train_method, params in classifiers:
-        print(f"[INFO] Training {clf_name} with model: {model_name}")
+        print(f"[INFO] Eğitim başlıyor: {clf_name} ({model_name})")
         train_method(params, embedding_name=model_name)
 
-    # Save trained models
+    # Modelleri kaydet
     trainer.save_models(save_path=save_path, embedding_name=model_name)
 
-    # Visualize results
+    # Sonuçları görselleştir
     trainer.visualize_results(embedding_name=model_name)
 
-    print(f"[INFO] Completed processing for model: {model_name}")
+    print(f"[INFO] Tamamlandı: {model_name}")
+
 
 if __name__ == "__main__":
-    # Select device
-    device = torch_directml.device()
-    print(f"[INFO] Using device: {device}")
+    # Spawn methodunu ayarla
+    multiprocessing.set_start_method("spawn", force=True)
 
-    # Dataset name
+    # Veri setini hazırla
     dataset_name = "maydogan/TRSAv1"
-
-    # Data processing
-    print("[INFO] Processing dataset...")
     processor = DataProcessor(dataset_name, text_column='review', label_column='score')
 
-    # Random subset selection
-    print("[INFO] Selecting random subset...")
+    print("[INFO] Rastgele alt küme seçiliyor...")
     subset = processor.get_random_subset(subset_size=5000)
-    print("[INFO] Subset class distribution:")
-    print(subset['score'].value_counts())
 
-    # Data splitting
-    print("[INFO] Splitting data into train and test sets...")
+    print("[INFO] Veriyi eğitim ve test setine bölme...")
     X_train, X_test, y_train, y_test = processor.split_data(subset)
 
-    # Model names and save path
+    # Embedding modelleri
     model_names = [
-        # "jinaai/jina-embeddings-v3",
+        "jinaai/jina-embeddings-v3",
         # "sentence-transformers/all-MiniLM-L12-v2",
         # "intfloat/multilingual-e5-large-instruct",
         # "BAAI/bge-m3",
-        # "nomic-ai/nomic-embed-text-v1",
-        "dbmdz/bert-base-turkish-cased",
+        "nomic-ai/nomic-embed-text-v1",
+        # "dbmdz/bert-base-turkish-cased",
     ]
     save_path = "models"
     os.makedirs(save_path, exist_ok=True)
 
-    # Create a process for each model
-    processes = []
+    # Paralel işlem argümanları
+    process_args = []
     for model_name in model_names:
-        process = multiprocessing.Process(
-            target=process_embedding_model,
-            args=(model_name, X_train, y_train, X_test, y_test, save_path, device)
-        )
-        processes.append(process)
-        process.start()
+        # Check if the model should use CPU or GPU
+        if "jinaai" in model_name or "nomic" in model_name:
+            device = torch.device("cpu")
+            print(f"[INFO] {model_name} için CPU kullanılıyor.")
+        else:
+            device = torch_directml.device()
+            print(f"[INFO] {model_name} için GPU kullanılıyor.")
 
-    # Wait for all processes to finish
-    for process in processes:
-        process.join()
+        process_args.append((model_name, X_train, y_train, X_test, y_test, save_path, device))
 
-    print("\n[INFO] All models processed and saved successfully!")
+
+    # Paralel işlem havuzu oluştur ve çalıştır
+    print("[INFO] Paralel GridSearch başlatılıyor...")
+    with multiprocessing.Pool(processes=len(model_names)) as pool:
+        pool.map(train_with_gridsearch, process_args)
+
+    print("[INFO] Tüm modeller başarıyla işlendi.")

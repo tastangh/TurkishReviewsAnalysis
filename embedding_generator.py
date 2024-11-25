@@ -2,7 +2,6 @@ import torch
 from transformers import AutoTokenizer, AutoModel
 import numpy as np
 from tqdm import tqdm
-from sklearn.decomposition import PCA
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import os
