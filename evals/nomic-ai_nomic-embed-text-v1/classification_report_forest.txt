@@ -1,0 +1,13 @@
+Model: nomic-ai_nomic-embed-text-v1
+Eğitim Türü: forest
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.67      0.69      0.68       336
+     Neutral       0.59      0.52      0.56       338
+    Positive       0.62      0.67      0.64       326
+
+    accuracy                           0.63      1000
+   macro avg       0.63      0.63      0.63      1000
+weighted avg       0.63      0.63      0.62      1000

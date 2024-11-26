@@ -1,0 +1,13 @@
+Model: BAAI_bge-m3
+Eğitim Türü: regression
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.80      0.82      0.81       336
+     Neutral       0.73      0.67      0.69       338
+    Positive       0.82      0.87      0.84       326
+
+    accuracy                           0.78      1000
+   macro avg       0.78      0.78      0.78      1000
+weighted avg       0.78      0.78      0.78      1000

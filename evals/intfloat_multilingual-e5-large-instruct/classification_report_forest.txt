@@ -1,0 +1,13 @@
+Model: intfloat_multilingual-e5-large-instruct
+Eğitim Türü: forest
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.82      0.82      0.82       336
+     Neutral       0.72      0.67      0.69       338
+    Positive       0.80      0.86      0.83       326
+
+    accuracy                           0.78      1000
+   macro avg       0.78      0.78      0.78      1000
+weighted avg       0.78      0.78      0.78      1000

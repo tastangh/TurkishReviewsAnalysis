@@ -1,0 +1,13 @@
+Model: nomic-ai_nomic-embed-text-v1
+Eğitim Türü: svm
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.74      0.69      0.71       336
+     Neutral       0.60      0.64      0.62       338
+    Positive       0.69      0.70      0.69       326
+
+    accuracy                           0.67      1000
+   macro avg       0.68      0.67      0.68      1000
+weighted avg       0.68      0.67      0.68      1000

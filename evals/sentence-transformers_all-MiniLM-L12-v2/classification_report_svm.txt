@@ -1,0 +1,13 @@
+Model: sentence-transformers_all-MiniLM-L12-v2
+Eğitim Türü: svm
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.72      0.66      0.69       336
+     Neutral       0.62      0.60      0.61       338
+    Positive       0.67      0.75      0.71       326
+
+    accuracy                           0.67      1000
+   macro avg       0.67      0.67      0.67      1000
+weighted avg       0.67      0.67      0.67      1000

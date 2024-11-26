@@ -1,0 +1,13 @@
+Model: BAAI_bge-m3
+Eğitim Türü: svm
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.82      0.81      0.81       336
+     Neutral       0.69      0.71      0.70       338
+    Positive       0.82      0.81      0.82       326
+
+    accuracy                           0.78      1000
+   macro avg       0.78      0.78      0.78      1000
+weighted avg       0.78      0.78      0.78      1000

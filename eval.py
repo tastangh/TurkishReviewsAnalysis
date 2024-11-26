@@ -105,6 +105,24 @@ class Eval:
         print(f"[SUCCESS] Doğruluk Karşılaştırması kaydedildi: {plot_path}")
         plt.close()
 
+    def _save_classification_report(self, report, model_name, training_method, output_dir):
+        """
+        Classification report'u bir metin dosyasına kaydeder.
+        
+        Args:
+            report: Classification report (string formatında).
+            model_name: Modelin adı.
+            training_method: Eğitim yöntemi (örneğin, svm, random_forest).
+            output_dir: Kaydedilecek dizin.
+        """
+        file_path = os.path.join(output_dir, f"classification_report_{training_method}.txt")
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(f"Model: {model_name}\n")
+            f.write(f"Eğitim Türü: {training_method}\n")
+            f.write("\nClassification Report:\n")
+            f.write(report)
+        print(f"[SUCCESS] Classification Report kaydedildi: {file_path}")
+
     def evaluate_models(self):
         """
         Yüklenen modelleri değerlendirir ve metrikleri döndürür.
@@ -137,6 +155,9 @@ class Eval:
                     # Confusion Matrix görsellerini kaydet
                     self._plot_confusion_matrix(cm, model_name, training_method, model_eval_dir)
 
+                    # Classification Report'u kaydet
+                    self._save_classification_report(report, model_name, training_method, model_eval_dir)
+
                     print(f"[RESULTS] {training_method} Accuracy: {acc}")
                     print(f"[RESULTS] {training_method} Classification Report:\n{report}")
 
@@ -157,7 +178,7 @@ if __name__ == "__main__":
     import torch
     from dataset import DataProcessor
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cpu")
     print(f"[INFO] Kullanılacak cihaz: {device}")
 
     dataset_name = "maydogan/TRSAv1"
