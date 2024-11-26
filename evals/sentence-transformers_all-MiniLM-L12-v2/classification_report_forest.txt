@@ -1,0 +1,13 @@
+Model: sentence-transformers_all-MiniLM-L12-v2
+Eğitim Türü: forest
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.63      0.68      0.66       336
+     Neutral       0.59      0.48      0.53       338
+    Positive       0.62      0.69      0.65       326
+
+    accuracy                           0.62      1000
+   macro avg       0.61      0.62      0.61      1000
+weighted avg       0.61      0.62      0.61      1000

@@ -1,0 +1,13 @@
+Model: jinaai_jina-embeddings-v3
+Eğitim Türü: regression
+
+Classification Report:
+              precision    recall  f1-score   support
+
+    Negative       0.82      0.79      0.81       336
+     Neutral       0.69      0.68      0.69       338
+    Positive       0.80      0.85      0.83       326
+
+    accuracy                           0.77      1000
+   macro avg       0.77      0.77      0.77      1000
+weighted avg       0.77      0.77      0.77      1000

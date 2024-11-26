@@ -1,6 +1,5 @@
 import os
 import joblib
-import torch
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
@@ -10,6 +9,9 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.svm import SVC
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, ParameterGrid
+import torch_directml 
+import multiprocessing
+import torch
 
 
 class Trainer:
@@ -72,7 +74,7 @@ class Trainer:
         plot_path = f"{plot_dir}/{sanitized_model_name}_grid_search.png"
         plt.savefig(plot_path)
         print(f"[SUCCESS] Grid Search görselleştirildi ve kaydedildi: {plot_path}")
-        plt.show()
+        # plt.show()
 
 
     def train_rf(self, param_grid, embedding_name):
@@ -179,98 +181,98 @@ class Trainer:
             plot_path = f"{plot_dir}/accuracy_comparison.png"
             plt.savefig(plot_path)
             print(f"[SUCCESS] Accuracy Comparison görselleştirildi ve kaydedildi: {plot_path}")
-            plt.show()
+            # plt.show()
 
-if __name__ == "__main__":
-    # Select device
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    print(f"[INFO] Using device: {device}")
 
-    # Dataset name
-    dataset_name = "maydogan/TRSAv1"
+def train_with_gridsearch(args):
+    """
+    Belirli bir model için embedding oluşturur, GridSearch ile eğitim yapar ve sonuçları kaydeder.
+    """
+    model_name, X_train, y_train, X_test, y_test, save_path, gpu_device = args
+    print(f"[INFO] Başlatılıyor: {model_name} (GPU: {gpu_device})")
+    
+    # GPU cihazı ayarla
+    embedder = EmbeddingGenerator(model_name, trust_remote_code=True, device=gpu_device)
 
-    # Data processing
-    print("[INFO] Processing dataset...")
-    processor = DataProcessor(dataset_name, text_column='review', label_column='score')
+    # Embedding oluştur
+    print(f"[INFO] Embedding oluşturuluyor: {model_name}")
+    X_train_embedded = embedder.get_representation(
+        model_data=(embedder.tokenizer, embedder.model), texts=X_train.tolist()
+    )
+    X_test_embedded = embedder.get_representation(
+        model_data=(embedder.tokenizer, embedder.model), texts=X_test.tolist()
+    )
 
-    # Random subset selection
-    print("[INFO] Selecting random subset...")
-    subset = processor.get_random_subset(subset_size=5000)
-    print("[INFO] Subset class distribution:")
-    print(subset['score'].value_counts())
+    # t-SNE Görselleştirme
+    print(f"[INFO] t-SNE görselleştirmesi: {model_name}")
+    embedder.visualize_tsne(X_train_embedded, y_train, title=f"t-SNE {model_name} (Train Set)")
+    embedder.visualize_tsne(X_test_embedded, y_test, title=f"t-SNE {model_name} (Test Set)")
 
-    # Plot subset label distribution
-    print("[INFO] Visualizing subset label distribution...")
-    processor.plot_label_distribution(subset, label_column='score', title="Ayırılan 5000 Data'nın Sınıf Dağılımı")
+    # Eğitim
+    trainer = Trainer(X_train_embedded, y_train, device=gpu_device)
 
-    # Data splitting
-    print("[INFO] Splitting data into train and test sets...")
-    X_train, X_test, y_train, y_test = processor.split_data(subset)
-
-    # Convert train/test splits into DataFrames for visualization
-    train_data = X_train.to_frame()
-    train_data['score'] = y_train
-    test_data = X_test.to_frame()
-    test_data['score'] = y_test
-
-    # Plot train label distribution
-    print("[INFO] Visualizing train set label distribution...")
-    processor.plot_label_distribution(train_data, label_column='score', title="Train Data Sınıf Dağılımı")
-
-    # Plot test label distribution
-    print("[INFO] Visualizing test set label distribution...")
-    processor.plot_label_distribution(test_data, label_column='score', title="Test Set Sınıf Dağılımı")
-   
-   # Embedding modelleri
-    model_names = [
-        # "jinaai/jina-embeddings-v3",
-        # "sentence-transformers/all-MiniLM-L12-v2",
-        # "intfloat/multilingual-e5-large-instruct",
-        # "BAAI/bge-m3",
-        # "nomic-ai/nomic-embed-text-v1",
-        "dbmdz/bert-base-turkish-cased",
+    classifiers = [
+        ("Random Forest", trainer.train_rf, {'n_estimators': [50, 100, 200], 'max_depth': [None, 10, 20], 'min_samples_split': [2, 5, 10]}),
+        ("SVM", trainer.train_svm, {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf'], 'gamma': [0.01, 0.1, 1]}),
+        ("Logistic Regression", trainer.train_logreg, {'C': [0.01, 0.1, 1, 10], 'solver': ['liblinear', 'lbfgs']})
     ]
 
-    # Hiperparametre grid'leri
-    svm_params = {'C': [0.1, 1, 10], 'kernel': ['linear', 'rbf'], 'gamma': [0.01, 0.1, 1]}
-    rf_params = {'n_estimators': [50, 100, 200], 'max_depth': [None, 10, 20], 'min_samples_split': [2, 5, 10]}
-    logreg_params = {'C': [0.01, 0.1, 1, 10], 'solver': ['liblinear', 'lbfgs']}
+    for clf_name, train_method, params in classifiers:
+        print(f"[INFO] Eğitim başlıyor: {clf_name} ({model_name})")
+        train_method(params, embedding_name=model_name)
 
-    # Model dosyalarını kaydetmek için klasör oluştur
+    # Modelleri kaydet
+    trainer.save_models(save_path=save_path, embedding_name=model_name)
+
+    # Sonuçları görselleştir
+    trainer.visualize_results(embedding_name=model_name)
+
+    print(f"[INFO] Tamamlandı: {model_name}")
+
+
+if __name__ == "__main__":
+    # Spawn methodunu ayarla
+    multiprocessing.set_start_method("spawn", force=True)
+
+    # Veri setini hazırla
+    dataset_name = "maydogan/TRSAv1"
+    processor = DataProcessor(dataset_name, text_column='review', label_column='score')
+
+    print("[INFO] Rastgele alt küme seçiliyor...")
+    subset = processor.get_random_subset(subset_size=5000)
+
+    print("[INFO] Veriyi eğitim ve test setine bölme...")
+    X_train, X_test, y_train, y_test = processor.split_data(subset)
+
+    # Embedding modelleri
+    model_names = [
+        "jinaai/jina-embeddings-v3",
+        "sentence-transformers/all-MiniLM-L12-v2",
+        "intfloat/multilingual-e5-large-instruct",
+        "BAAI/bge-m3",
+        "nomic-ai/nomic-embed-text-v1",
+        "dbmdz/bert-base-turkish-cased",
+    ]
     save_path = "models"
     os.makedirs(save_path, exist_ok=True)
 
-    # Embedding modeli döngüsü
-    for model_name in tqdm(model_names, desc="Embedding Modelleri"):
-        print(f"\n[INFO] Embedding modeli: {model_name}")
-        embedder = EmbeddingGenerator(model_name, trust_remote_code=True, device=device)
+    # Paralel işlem argümanları
+    process_args = []
+    for model_name in model_names:
+        # Check if the model should use CPU or GPU
+        if "jinaai" in model_name or "nomic" in model_name:
+            device = torch.device("cpu")
+            print(f"[INFO] {model_name} için CPU kullanılıyor.")
+        else:
+            device = torch_directml.device()
+            print(f"[INFO] {model_name} için GPU kullanılıyor.")
 
-        # Eğitim seti embedding'lerini oluştur
-        print(f"[INFO] Embedding oluşturuluyor: {model_name}")
-        X_train_embedded = embedder.encode(X_train.tolist(), pooling="mean")
-        X_test_embedded = embedder.encode(X_test.tolist(), pooling="mean")
-        
-         # t-SNE Visualization
-        print(f"[INFO] t-SNE görselleştirme başlatılıyor: {model_name}")
-        embedder.visualize_tsne(X_train_embedded, y_train, title=f"t-SNE {model_name} (Train Set)")
-        embedder.visualize_tsne(X_test_embedded,y_test,title=f"t-SNE {model_name} (Test Set)")
-        # Trainer
-        trainer = Trainer(X_train_embedded, y_train, device=device)
+        process_args.append((model_name, X_train, y_train, X_test, y_test, save_path, device))
 
-        # Sınıflandırıcı döngüsü
-        classifiers = [("Random Forest", trainer.train_rf, rf_params),
-                       ("SVM", trainer.train_svm, svm_params),
-                       ("Logistic Regression", trainer.train_logreg, logreg_params)]
 
-        for clf_name, train_method, params in tqdm(classifiers, desc=f"Modeller ({model_name})"):
-            print(f"\n[INFO] {clf_name} eğitiliyor...")
-            train_method(params, embedding_name=model_name)
+    # Paralel işlem havuzu oluştur ve çalıştır
+    print("[INFO] Paralel GridSearch başlatılıyor...")
+    with multiprocessing.Pool(processes=len(model_names)) as pool:
+        pool.map(train_with_gridsearch, process_args)
 
-        # Eğitilen modelleri kaydet
-        trainer.save_models(save_path=save_path, embedding_name=model_name)
-
-        # Eğitim sonuçlarını görselleştir
-        trainer.visualize_results(embedding_name=model_name)
-
-    print("\n[INFO] Tüm modeller kaydedildi!")
-
+    print("[INFO] Tüm modeller başarıyla işlendi.")
