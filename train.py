@@ -247,11 +247,11 @@ if __name__ == "__main__":
     # Embedding modelleri
     model_names = [
         "jinaai/jina-embeddings-v3",
-        # "sentence-transformers/all-MiniLM-L12-v2",
-        # "intfloat/multilingual-e5-large-instruct",
-        # "BAAI/bge-m3",
+        "sentence-transformers/all-MiniLM-L12-v2",
+        "intfloat/multilingual-e5-large-instruct",
+        "BAAI/bge-m3",
         "nomic-ai/nomic-embed-text-v1",
-        # "dbmdz/bert-base-turkish-cased",
+        "dbmdz/bert-base-turkish-cased",
     ]
     save_path = "models"
     os.makedirs(save_path, exist_ok=True)
