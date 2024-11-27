@@ -8,17 +8,29 @@ from embedding_generator import EmbeddingGenerator
 
 
 class Eval:
+    """
+    Eğitilmiş modellerin test seti üzerinde değerlendirilmesi için bir sınıf.
+
+    Attributes:
+        model_dirs (list): Modellerin kaydedildiği dizinlerin listesi.
+        embedding_model_names (list): Kullanılacak embedding model adlarının listesi.
+        X_test_texts (list): Test veri metinleri.
+        y_test (list): Test veri etiketleri.
+        device (str): Kullanılacak cihaz (ör. 'cuda' veya 'cpu').
+        models (dict): Kaydedilmiş modellerin yüklendiği bir sözlük.
+    """
+
     def __init__(self, model_dirs, embedding_model_names, trust_remote_code, X_test_texts, y_test, device):
         """
-        Birden fazla modeli değerlendirme sınıfı.
-        
+        Eval sınıfını başlatır.
+
         Args:
-            model_dirs: Modellerin kaydedildiği dizinlerin listesi.
-            embedding_model_names: Kullanılacak embedding model adlarının listesi.
-            trust_remote_code: Embedding modelini indirirken güven seçeneği.
-            X_test_texts: Test veri metinleri.
-            y_test: Test etiketleri.
-            device: Kullanılacak cihaz (cuda/cpu).
+            model_dirs (list): Modellerin kaydedildiği dizinlerin listesi.
+            embedding_model_names (list): Kullanılacak embedding model adlarının listesi.
+            trust_remote_code (bool): Embedding modeli indirirken uzak kod güven seçeneği.
+            X_test_texts (list): Test veri metinleri.
+            y_test (list): Test veri etiketleri.
+            device (str): Kullanılacak cihaz (ör. 'cuda' veya 'cpu').
         """
         self.model_dirs = model_dirs
         self.embedding_model_names = embedding_model_names
@@ -29,17 +41,17 @@ class Eval:
 
     def _load_models(self):
         """
-        Kaydedilen modelleri yükler.
+        Kaydedilen modelleri belirtilen dizinlerden yükler.
 
         Returns:
-            dict: Model adlarını ve modelleri içeren bir sözlük.
+            dict: Model adlarını ve yüklenen modelleri içeren bir sözlük.
         """
         models = {}
         for model_dir in self.model_dirs:
             for file in os.listdir(model_dir):
-                if file.endswith(".pkl"):
+                if file.endswith(".pkl"):  # Sadece .pkl dosyalarını yükle
                     model_name = os.path.basename(model_dir)
-                    training_method = os.path.splitext(file)[0]  # Eğitim metodu: svm, random_forest, vs.
+                    training_method = os.path.splitext(file)[0]  # Eğitim yöntemi: svm, random_forest, vb.
                     full_model_name = f"{model_name}_{training_method}"
                     model_path = os.path.join(model_dir, file)
                     models[full_model_name] = joblib.load(model_path)
@@ -48,43 +60,52 @@ class Eval:
 
     def _ensure_eval_dir(self, model_name):
         """
-        Belirtilen model için evals altında bir dizin oluşturur.
-        
+        Değerlendirme sonuçlarını kaydetmek için gerekli dizinleri oluşturur.
+
         Args:
-            model_name: Model adı (klasör adı olarak kullanılacak).
+            model_name (str): Model adı (klasör adı olarak kullanılacak).
+
         Returns:
-            str: Model için oluşturulan dizin yolu.
+            str: Model için oluşturulan değerlendirme dizininin yolu.
         """
-        model_eval_dir = os.path.join("evals", model_name)
+        model_eval_dir = os.path.join("eval_results", model_name)
         os.makedirs(model_eval_dir, exist_ok=True)
         return model_eval_dir
 
     def _plot_confusion_matrix(self, cm, model_name, training_method, output_dir):
-        """Confusion Matrix'i görselleştirir ve kaydeder."""
+        """
+        Karışıklık matrisini görselleştirir ve bir dosyaya kaydeder.
+
+        Args:
+            cm (ndarray): Karışıklık matrisi.
+            model_name (str): Modelin adı.
+            training_method (str): Eğitim yöntemi (ör. 'random_forest').
+            output_dir (str): Sonucun kaydedileceği dizin.
+        """
         class_names = np.unique(self.y_test)
 
         plt.figure(figsize=(8, 6))
-        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues', 
+        sns.heatmap(cm, annot=True, fmt='d', cmap='Blues',
                     xticklabels=class_names, 
                     yticklabels=class_names)
         plt.title(f"Confusion Matrix - {training_method}")
-        plt.xlabel("Predicted Labels")
-        plt.ylabel("True Labels")
+        plt.xlabel("Tahmin Edilen Etiketler")
+        plt.ylabel("Gerçek Etiketler")
         plt.tight_layout()
 
         plot_path = os.path.join(output_dir, f"confusion_matrix_{training_method}.png")
         plt.savefig(plot_path)
-        print(f"[SUCCESS] Confusion Matrix kaydedildi: {plot_path}")
+        print(f"[SUCCESS] Karışıklık Matrisi kaydedildi: {plot_path}")
         plt.close()
 
     def _visualize_accuracy(self, model_results, model_name, output_dir):
         """
-        Modelin doğruluk oranlarını bar grafikte gösterir ve kaydeder.
-        
+        Model doğruluk oranlarını görselleştirir ve bir dosyaya kaydeder.
+
         Args:
-            model_results: Modelin farklı eğitim metotları için sonuçları.
-            model_name: Modelin adı.
-            output_dir: Kaydedilecek dizin.
+            model_results (dict): Modelin farklı eğitim yöntemleri için sonuçları.
+            model_name (str): Modelin adı.
+            output_dir (str): Kaydedilecek dizin.
         """
         training_methods = list(model_results.keys())
         accuracies = [metrics["accuracy"] for metrics in model_results.values()]
@@ -93,7 +114,7 @@ class Eval:
         sns.barplot(x=training_methods, y=accuracies, palette="viridis")
         plt.title(f"Doğruluk Karşılaştırması - {model_name}")
         plt.xlabel("Eğitim Türü")
-        plt.ylabel("Başarı")
+        plt.ylabel("Doğruluk")
         plt.ylim(0, 1)
 
         for i, acc in enumerate(accuracies):
@@ -108,12 +129,12 @@ class Eval:
     def _save_classification_report(self, report, model_name, training_method, output_dir):
         """
         Classification report'u bir metin dosyasına kaydeder.
-        
+
         Args:
-            report: Classification report (string formatında).
-            model_name: Modelin adı.
-            training_method: Eğitim yöntemi (örneğin, svm, random_forest).
-            output_dir: Kaydedilecek dizin.
+            report (str): Sınıflandırma raporu.
+            model_name (str): Modelin adı.
+            training_method (str): Eğitim yöntemi.
+            output_dir (str): Sonucun kaydedileceği dizin.
         """
         file_path = os.path.join(output_dir, f"classification_report_{training_method}.txt")
         with open(file_path, "w", encoding="utf-8") as f:
@@ -121,11 +142,14 @@ class Eval:
             f.write(f"Eğitim Türü: {training_method}\n")
             f.write("\nClassification Report:\n")
             f.write(report)
-        print(f"[SUCCESS] Classification Report kaydedildi: {file_path}")
+        print(f"[SUCCESS] Sınıflandırma Raporu kaydedildi: {file_path}")
 
     def evaluate_models(self):
         """
-        Yüklenen modelleri değerlendirir ve metrikleri döndürür.
+        Yüklenen modelleri test seti üzerinde değerlendirir ve sonuçları döndürür.
+
+        Returns:
+            dict: Her model ve eğitim yöntemi için değerlendirme sonuçlarını içerir.
         """
         results = {}
 
@@ -136,30 +160,27 @@ class Eval:
                 model_data=(embedder.tokenizer, embedder.model), texts=self.X_test_texts
             )
 
-            # Model adı ve sonuçları saklanacak
             model_name = os.path.basename(model_dir)
             model_eval_dir = self._ensure_eval_dir(model_name)
             model_results = {}
 
             for full_model_name, model in self.models.items():
-                if full_model_name.startswith(model_name):  # İlgili modele ait modeller
+                if full_model_name.startswith(model_name):  # İlgili modele ait tüm modeller
                     training_method = full_model_name.split("_")[-1]
                     print(f"\n[INFO] Model değerlendiriliyor: {training_method}")
 
-                    # Tahmin ve metrikler
+                    # Tahmin ve metrik hesaplama
                     y_pred = model.predict(X_test_embedded)
                     acc = accuracy_score(self.y_test, y_pred)
                     report = classification_report(self.y_test, y_pred, zero_division=0)
                     cm = confusion_matrix(self.y_test, y_pred)
 
-                    # Confusion Matrix görsellerini kaydet
+                    # Sonuçları kaydet
                     self._plot_confusion_matrix(cm, model_name, training_method, model_eval_dir)
-
-                    # Classification Report'u kaydet
                     self._save_classification_report(report, model_name, training_method, model_eval_dir)
 
-                    print(f"[RESULTS] {training_method} Accuracy: {acc}")
-                    print(f"[RESULTS] {training_method} Classification Report:\n{report}")
+                    print(f"[RESULTS] {training_method} Doğruluk: {acc}")
+                    print(f"[RESULTS] {training_method} Sınıflandırma Raporu:\n{report}")
 
                     model_results[training_method] = {
                         "accuracy": acc,
@@ -167,7 +188,7 @@ class Eval:
                         "confusion_matrix": cm
                     }
 
-            # Accuracy Comparison görselini kaydet
+            # Doğruluk karşılaştırma görseli
             self._visualize_accuracy(model_results, model_name, model_eval_dir)
             results[model_name] = model_results
 
@@ -219,6 +240,6 @@ if __name__ == "__main__":
     for model_name, training_methods in evaluation_results.items():
         print(f"\n[SUMMARY] Model: {model_name}")
         for training_method, metrics in training_methods.items():
-            print(f"  Training Method: {training_method}")
-            print(f"  Accuracy: {metrics['accuracy']}")
-            print(f"  Classification Report:\n{metrics['classification_report']}")
+            print(f"  Eğitim Türü: {training_method}")
+            print(f"  Doğruluk: {metrics['accuracy']}")
+            print(f"  Sınıflandırma Raporu:\n{metrics['classification_report']}")
