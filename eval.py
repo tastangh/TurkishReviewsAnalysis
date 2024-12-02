@@ -202,27 +202,29 @@ if __name__ == "__main__":
     device = torch.device("cpu")
     print(f"[INFO] Kullanılacak cihaz: {device}")
 
-    dataset_name = "maydogan/TRSAv1"
+    dataset_name = "savasy/ttc4900"
     embedding_model_names = [
-        "jinaai/jina-embeddings-v3",
+        # "jinaai/jina-embeddings-v3",
         "sentence-transformers/all-MiniLM-L12-v2",
         "intfloat/multilingual-e5-large-instruct",
-        "BAAI/bge-m3",
+        # "BAAI/bge-m3",
         "nomic-ai/nomic-embed-text-v1",
         "dbmdz/bert-base-turkish-cased",
     ]
     model_dirs = [
-        "models/jinaai_jina-embeddings-v3",
+        # "models/jinaai_jina-embeddings-v3",
         "models/sentence-transformers_all-MiniLM-L12-v2",
         "models/intfloat_multilingual-e5-large-instruct",
-        "models/BAAI_bge-m3",
+        # "models/BAAI_bge-m3",
         "models/nomic-ai_nomic-embed-text-v1",
         "models/dbmdz_bert-base-turkish-cased",
     ]
 
     print("[INFO] Veri seti işleniyor...")
-    processor = DataProcessor(dataset_name, text_column='review', label_column='score')
-    subset = processor.get_random_subset(subset_size=5000)
+    processor = DataProcessor(dataset_name, text_column='text', label_column='category')
+
+    print("[INFO] Rastgele alt küme seçiliyor...")
+    subset = processor.get_random_subset(subset_size=4900)
     X_train, X_test, y_train, y_test = processor.split_data(subset)
     print("[INFO] Veri işlemleri tamamlandı.")
 

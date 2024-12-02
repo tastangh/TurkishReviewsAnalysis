@@ -281,21 +281,21 @@ if __name__ == "__main__":
     multiprocessing.set_start_method("spawn", force=True)
 
     # Veri işleme adımları
-    dataset_name = "maydogan/TRSAv1"  # Veri seti ismi
-    processor = DataProcessor(dataset_name, text_column='review', label_column='score')
+    dataset_name = "savasy/ttc4900"  # Veri seti ismi
+    processor = DataProcessor(dataset_name, text_column='text', label_column='category')
 
     print("[INFO] Rastgele alt küme seçiliyor...")
-    subset = processor.get_random_subset(subset_size=5000)
+    subset = processor.get_random_subset(subset_size=4900)
 
     print("[INFO] Veriyi eğitim ve test setine bölme...")
     X_train, X_test, y_train, y_test = processor.split_data(subset)
 
     # Kullanılacak embedding modelleri
     model_names = [
-        "jinaai/jina-embeddings-v3",
+        # "jinaai/jina-embeddings-v3",
         "sentence-transformers/all-MiniLM-L12-v2",
         "intfloat/multilingual-e5-large-instruct",
-        "BAAI/bge-m3",
+        # "BAAI/bge-m3",
         "nomic-ai/nomic-embed-text-v1",
         "dbmdz/bert-base-turkish-cased",
     ]

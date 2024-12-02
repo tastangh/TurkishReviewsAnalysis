@@ -1,9 +1,4 @@
 
-# TurkishReviewsAnalysis
-
-Bu proje, Türkçe metin incelemelerini farklı embedding yöntemleri (Berturk, e5, jina vb.) kullanarak temsil eder ve bu temsilleri çeşitli makine öğrenimi modelleri (Random Forest, SVM, Logistic Regression) ile değerlendirir. Eğitim ve test kümesi üzerinden modellerin performansını ölçer.
-
----
 
 ## Kurulum
 
@@ -59,24 +54,6 @@ Aşağıdaki klasörlerde proje çıktıları saklanır:
 - `evals/`: Değerlendirme sonuçlarının (grafikler, raporlar) saklandığı klasör.
 - `plots/`: Embedding modellerinin görselleştirilmesi (ör. t-SNE).
 
----
-
-## Önemli Notlar
-- Veri seti olarak `maydogan/TRSAv1` kullanılmaktadır. Veri seti, Hugging Face'den indirilmektedir.
-- Eğitim verileri `DataProcessor` sınıfı ile işlenir ve eğitim-test kümesine bölünür.
-- Embedding işlemleri `EmbeddingGenerator` sınıfı ile yapılır.
-- Eğitim ve değerlendirme süreçleri sırasında GPU/CPU cihazları otomatik olarak seçilir.
-
----
-
-## Çalıştırma Örneği
-
-1. **Sanal Ortamı Aktive Etme:**
-   ```bash
-   reviews_env\Scripts\activate  # Windows
-   source reviews_env/bin/activate  # MacOS/Linux
-   ```
-
 2. **Eğitim:**
    ```bash
    python train.py
@@ -103,20 +80,4 @@ tqdm==4.65.0
 datasets==2.12.0
 joblib==1.3.2
 ```
-
-Ek olarak, DirectML desteği gerekiyorsa `requirements_directml.txt` dosyasını kullanabilirsiniz.
-
-```plaintext
-# DirectML ile uyumlu ek bağımlılıklar
-torch-directml==2.0.1
-```
-
---- 
-
-## Katkıda Bulunma
-Projeye katkıda bulunmak isterseniz, lütfen bir **pull request** oluşturun veya bir **issue** açın. Her türlü geri bildirim değerlidir.
-
----
-
-## Lisans
-Bu proje [MIT Lisansı](LICENSE) ile lisanslanmıştır.
+!pip install --upgrade transformers huggingface_hub

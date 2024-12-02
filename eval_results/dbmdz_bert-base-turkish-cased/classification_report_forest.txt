@@ -4,10 +4,14 @@ Eğitim Türü: forest
 Classification Report:
               precision    recall  f1-score   support
 
-    Negative       0.74      0.75      0.75       336
-     Neutral       0.67      0.63      0.65       338
-    Positive       0.78      0.81      0.79       326
+           0       0.82      0.90      0.85       143
+           1       0.92      0.86      0.89       162
+           2       0.80      0.82      0.81       125
+           3       0.87      0.95      0.91       140
+           4       0.91      0.91      0.91       128
+           5       0.99      0.96      0.98       157
+           6       0.91      0.81      0.86       125
 
-    accuracy                           0.73      1000
-   macro avg       0.73      0.73      0.73      1000
-weighted avg       0.73      0.73      0.73      1000
+    accuracy                           0.89       980
+   macro avg       0.89      0.89      0.89       980
+weighted avg       0.89      0.89      0.89       980

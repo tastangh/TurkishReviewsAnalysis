@@ -4,10 +4,14 @@ Eğitim Türü: regression
 Classification Report:
               precision    recall  f1-score   support
 
-    Negative       0.74      0.67      0.70       336
-     Neutral       0.61      0.60      0.61       338
-    Positive       0.66      0.73      0.70       326
+           0       0.78      0.87      0.83       143
+           1       0.86      0.75      0.80       162
+           2       0.76      0.72      0.74       125
+           3       0.83      0.89      0.86       140
+           4       0.91      0.90      0.90       128
+           5       0.95      0.90      0.92       157
+           6       0.80      0.86      0.83       125
 
-    accuracy                           0.67      1000
-   macro avg       0.67      0.67      0.67      1000
-weighted avg       0.67      0.67      0.67      1000
+    accuracy                           0.84       980
+   macro avg       0.84      0.84      0.84       980
+weighted avg       0.84      0.84      0.84       980

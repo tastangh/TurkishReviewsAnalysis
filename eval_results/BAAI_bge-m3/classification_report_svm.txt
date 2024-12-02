@@ -4,10 +4,14 @@ Eğitim Türü: svm
 Classification Report:
               precision    recall  f1-score   support
 
-    Negative       0.82      0.81      0.81       336
-     Neutral       0.70      0.71      0.70       338
-    Positive       0.82      0.82      0.82       326
+           0       0.90      0.89      0.89       143
+           1       0.87      0.84      0.85       162
+           2       0.88      0.84      0.86       125
+           3       0.93      0.98      0.95       140
+           4       0.96      0.95      0.96       128
+           5       0.97      0.97      0.97       157
+           6       0.86      0.90      0.88       125
 
-    accuracy                           0.78      1000
-   macro avg       0.78      0.78      0.78      1000
-weighted avg       0.78      0.78      0.78      1000
+    accuracy                           0.91       980
+   macro avg       0.91      0.91      0.91       980
+weighted avg       0.91      0.91      0.91       980
